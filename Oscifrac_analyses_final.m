@@ -110,7 +110,7 @@ cfg.channel = chansind;
 
 for i = 1:length(taskoutputs)
     cfg.subs = [commonsubs(i+3,1) commonsubs(1,i+3)];
-    stats_resttask(i,:) = ft_measurestatistics(cfg,{taskoutputs{i} avgrest});
+    stats_resttask(i,:) = dm_measurestatistics(cfg,{taskoutputs{i} avgrest});
 end
 
 % get percent change values for rest-task differences
