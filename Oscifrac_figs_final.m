@@ -162,6 +162,9 @@ savefig('Fig1b_intersub_schema.fig'); export_fig('Fig1b_intersub_schema.png','-m
 
 %% figure 2: oscillatory vs fractal
 
+hot2 = hot;
+hot2 = hot2(1:192,:);
+
 % v1: percent change
 
 for i = 1:3
@@ -203,7 +206,7 @@ for i = 1:3
     cbar.Label.FontSize = 20;
     
     Normalize_Clim([ax1 ax2],0)
-    colormap(hot)
+    colormap(hot2)
     
     p(2,1).select()
     b1 = bar([1 2],prcchange(i,1:2),'FaceColor',palecol([1 0 0],0.3));

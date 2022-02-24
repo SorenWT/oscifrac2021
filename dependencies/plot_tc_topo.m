@@ -1,8 +1,13 @@
 function plot_tc_topo(time,datamat,settings,p,pindx,varargin)
+% time should be in ms
 % datamat should be in the form channels x time points x subjects x
 % conditions
-% time should be in ms
-%settings only needs to have a layout and the field 'datatype' (EEG or MEG)
+% settings is a struct with fields 'layout' (a Fieldtrip layout) and 'datatype' (EEG or MEG)
+% p is a panel object
+% pindx is the index of the subpanel you want to plot into, supplied as a
+% cell array (i.e. if you want to plot into p(1,2), supply {1 2}). If you
+% don't want to plot into a subpanel, put {}
+
 
 if CheckInput(varargin,'avgfunc')
     avgfunc = EasyParse(varargin,'avgfunc');
@@ -10,12 +15,47 @@ else
     avgfunc = @nanmean;
 end
 
-p(pindx{:}).pack();
-for cc = 1:4
-    p(pindx{:}).pack({[0.25*(cc-1) 0 0.25 0.15]})
+if CheckInput(varargin,'topolocation')
+    topoloc = EasyParse(varargin,'topolocation');
+else
+    topoloc = 'bot_outside';
 end
-p(pindx{:},1).select()
 
+% doesn't do anything right now, but later should add the ability to choose
+% how many topoplots to use
+if CheckInput(varargin,'ntopos')
+   ntopos = EasyParse(varargin,'ntopos');
+else
+    ntopos = 4;
+end
+
+if nargin < 4
+    p = panel('no-manage-font');
+    pindx = {};
+end
+
+switch topoloc
+    case 'bot_inside'
+        p(pindx{:}).pack();
+        for cc = 1:4
+            p(pindx{:}).pack({[0.25*(cc-1) 0 0.25 0.15]})
+        end
+        mainindx = {1};
+        topoindx = {{2} {3} {4} {5}};
+    case 'bot_outside'
+        p(pindx{:}).pack('v',{50 50})
+        p(pindx{:},2).pack(2,2)
+        mainindx = {1};
+        topoindx = {{2 1 1},{2 1 2},{2 2 1},{2 2 2}};
+    case 'right_outside'
+        p(pindx{:}).pack('h',{60 40})
+        p(pindx{:},2).pack('v',repmat({1/ntopos},1,ntopos))
+        mainindx = {1};
+        topoindx = {{2 1} {2 2} {2 3} {2 4}};
+end
+
+
+p(pindx{:},mainindx{:}).select()
 hold on
 
 if CheckInput(varargin,'color')
@@ -43,7 +83,7 @@ plotindx = round(plotindx);
 
 %tindx =
 for cc = 1:4
-    p(pindx{:},cc+1).select()
+    p(pindx{:},topoindx{cc}{:}).select()
     %axes(p(2,c,cc+1).axis)
     if size(datamat,4) > 1
         plotdata = avgfunc(squeeze(datamat(:,plotindx(cc),:,2))...
@@ -54,14 +94,19 @@ for cc = 1:4
     if strcmpi(settings.datatype,'MEG')
         ft_cluster_topoplot(settings.layout,plotdata,settings.datasetinfo.label,...
             ones(size(datamat,1)),zeros(size(datamat,1)));
-    else
+        p(pindx{:},topoindx{cc}{:}).title([num2str(time(plotindx(cc))) ' ms']);
+    elseif strcmpi(settings.datatype,'EEG')
         cluster_topoplot(plotdata,settings.layout,...
             ones(size(datamat,1)),zeros(size(datamat,1)));
+        t = p(pindx{:},topoindx{cc}{:}).title([num2str(time(plotindx(cc))) ' ms']);
+    elseif strcmpi(settings.datatype,'source')
+        p = ft_cluster_sourceplot(plotdata,settings.layout,settings.layout,ones(size(plotdata)),'method','wholebrain','panel',p,'panelindx',{pindx{:} topoindx{cc}{:}});
+        t = p(pindx{:},topoindx{cc}{:},1,2).title([num2str(time(plotindx(cc))) ' ms']);
     end
     if cc == 4
         cbar = colorbar('EastOutside');
     end
-    title([num2str(time(plotindx(cc))) ' ms'],'FontSize',10)
+    t.FontSize = 10; t.FontWeight = 'bold';
     ax(cc) = gca;
     %Set_Clim(ax(cc),[prctile(plotdata,20) prctile(plotdata,80)]);
 end
